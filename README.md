@@ -170,3 +170,34 @@ Your datalake definitions may also be commited to SCM systems to share them and 
              full-table-access:
                  rank: 1
                  description: dba
+
+# Azure Setup
+Following steps describe a way to set up and run scripts for Azure.
+
+## Prerequisite
+* [Azure account with Active subscription](https://azure.microsoft.com/free/?utm_source=campaign&utm_campaign=python-dev-center&mktingSource=environment-setup)
+* [Python 2.7+ or 3.5.3+](https://www.python.org/downloads)
+* [Azure Command-Line Interface (CLI)](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+
+## Environment Setup
+* Sign-in to Azure account
+    ```
+    az login
+    ```
+* Create Service Principal (if not already created) - make sure the SP has Owner role at subscription level
+    ```
+    az ad sp create-for-rbac --name KnoxSP --password knox-password > local-sp.json
+    ```
+   Note: If you explicitly want to set permissions use the option ``--skip-assignment`` and assign Owner permissions at subscription level later.
+* Get subscription id
+    ```
+      az account show 
+    ```
+* Setup environemnt variables (update values as necessarily)
+    ```
+    AZURE_SUBSCRIPTION_ID="aa11bb33-cc77-dd88-ee99-0918273645aa"
+    AZURE_TENANT_ID="00112233-7777-8888-9999-aabbccddeeff"
+    AZURE_CLIENT_ID="12345678-1111-2222-3333-1234567890ab"
+    AZURE_CLIENT_SECRET="abcdef00-4444-5555-6666-1234567890ab"
+    ```
+For more information see [Azure Configure Authentication](https://docs.microsoft.com/en-us/azure/developer/python/configure-local-development-environment?tabs=bash#configure-authentication) docs

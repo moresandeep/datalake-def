@@ -8,6 +8,7 @@ class App(cmd2.Cmd):
     datalakename = 'mydatalake'
     paths = {}
     ddf = {'datalake': 'mydatalake', 'datalake_roles': {}, 'storage': {}}
+    vendor = ''
 
     def __init__(self):
         super().__init__()
@@ -132,22 +133,35 @@ class App(cmd2.Cmd):
 
     new_datalake_parser = argparse.ArgumentParser()
     new_datalake_parser.add_argument('-n', '--name', type=str, help='Datalake name')
+    new_datalake_parser.add_argument('-c', '--cloud', type=str, help='Cloud vendor name: AWS|Azure|GCP')
+    new_datalake_parser.add_argument('-s', '--storage_account', type=str, help='Azure storage account name')
 
     @cmd2.with_argparser(new_datalake_parser)
     def do_new_datalake(self, args):
         """Create a new DataLake DDF."""
-        self.datalakename = args.name;
+        self.datalakename = args.name
 
         if not os.path.exists('datalakes/' + self.datalakename):
             os.makedirs('datalakes/' + self.datalakename)
 
         from string import Template
- 
+        d = dict()
+
         # open template file
-        d = dict(datalake_name=self.datalakename)
-        with open('templates/ddf.yaml', 'r') as reader:
-            ddf = Template(reader.read())
-            ddf = ddf.safe_substitute(d)
+        d['datalake_name'] = self.datalakename
+        cloudname = args.cloud
+        storage_account = args.storage_account
+        if cloudname is not None and (args.cloud.lower() == 'Azure'.lower()):
+           # For Azure we have containers at storage account level
+           if storage_account is not None:
+                d['storage_account'] = storage_account
+           with open('templates/ddf-azure.yaml', 'r') as reader:
+               ddf = Template(reader.read())
+               ddf = ddf.safe_substitute(d)
+        else:
+            with open('templates/ddf.yaml', 'r') as reader:
+                ddf = Template(reader.read())
+                ddf = ddf.safe_substitute(d)
 
         # open output file
         with open('datalakes/' + self.datalakename + '/ddf.yaml', 'w') as writer:

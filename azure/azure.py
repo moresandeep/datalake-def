@@ -39,6 +39,8 @@ class AzureFactory:
                         # open template file
                         d = dict()
                         d['subscription_id'] = os.getenv('AZURE_SUBSCRIPTION_ID', 'MY_AZURE_SUBSCRIPTION_ID')
+                        d = storage
+                        d['storage_location'] = storage[elements[2]]
                         with open(filepath, 'r') as reader:
                             t = Template(reader.read())
                             t = t.safe_substitute(d)
@@ -54,7 +56,8 @@ class AzureFactory:
                                 'w') as writer:
                             writer.write(t)
                         print('The datalake role: ' + name + ' is assigned the iam role: ' +
-                              role['iam_role'] + ' which has been granted: ' + perm_name)
+                              role['iam_role'] + ' which has been granted: ' + perm_name +
+                              ' for path: ' + d['storage_location'])
                     else:
                         print('Unknown permissions element: ' + elements[1] + ' check permissions in ddf file')
                 elif elements[0] == 'sts':

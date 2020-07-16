@@ -201,3 +201,8 @@ Following steps describe a way to set up and run scripts for Azure.
     AZURE_CLIENT_SECRET="abcdef00-4444-5555-6666-1234567890ab"
     ```
 For more information see [Azure Configure Authentication](https://docs.microsoft.com/en-us/azure/developer/python/configure-local-development-environment?tabs=bash#configure-authentication) docs
+
+## Example use:
+    ``` 
+    "set debug true" "new_datalake -n srm -c Azure -s myStorageAccount" "build_datalake -c Azure" quit
+    ```

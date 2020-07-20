@@ -37,10 +37,9 @@ class AzureFactory:
                     if os.path.exists(filepath):
                         from string import Template
                         # open template file
-                        d = dict()
-                        d['subscription_id'] = os.getenv('AZURE_SUBSCRIPTION_ID', 'MY_AZURE_SUBSCRIPTION_ID')
                         d = storage
                         d['storage_location'] = storage[elements[2]]
+                        d['subscription_id'] = os.getenv('AZURE_SUBSCRIPTION_ID', 'MY_AZURE_SUBSCRIPTION_ID')
                         with open(filepath, 'r') as reader:
                             t = Template(reader.read())
                             t = t.safe_substitute(d)

@@ -193,16 +193,21 @@ Following steps describe a way to set up and run scripts for Azure.
     ```
       az account show 
     ```
-* Setup environemnt variables (update values as necessarily)
+* Setup environemnt variables (update values as necessarily) - Required
     ```
     AZURE_SUBSCRIPTION_ID="aa11bb33-cc77-dd88-ee99-0918273645aa"
     AZURE_TENANT_ID="00112233-7777-8888-9999-aabbccddeeff"
     AZURE_CLIENT_ID="12345678-1111-2222-3333-1234567890ab"
     AZURE_CLIENT_SECRET="abcdef00-4444-5555-6666-1234567890ab"
     ```
+* Setup environemnt variables (update values as necessarily) - Optional
+    ```
+    AZURE_RESOURCE_GROUP="myResourceGroup" #Resource group under which MSIs will be created, else default is <datalakename>RG
+    ```
 For more information see [Azure Configure Authentication](https://docs.microsoft.com/en-us/azure/developer/python/configure-local-development-environment?tabs=bash#configure-authentication) docs
 
-## Example use:
-    ``` 
+## Examples
+* Create a default DDF 
+    ```
     "set debug true" "new_datalake -n srm -c Azure -s myStorageAccount" "build_datalake -c Azure" quit
     ```

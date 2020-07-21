@@ -32,7 +32,7 @@ storage:
             path: ${storage_account}@data
     DATALAKE_BUCKET:
             description: main data directory
-            path: ${storage_account}@data
+            path: /data
     RANGER_AUDIT_LOCATION:
             description: ranger audit logs
             path: ${storage_account}@ranger

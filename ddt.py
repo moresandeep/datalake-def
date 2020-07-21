@@ -230,9 +230,9 @@ class App(cmd2.Cmd):
         factory.recall(self.ddf)
 
 sys.path.insert(1, 'aws')
-sys.path.insert(2, 'azure')
+sys.path.insert(2, 'az')
 sys.path.insert(3, 'gcp')
-import aws, azure, gcp
+import aws, az, gcp
 
 class CloudFactory:
     """A cloud factory"""
@@ -268,7 +268,7 @@ class CloudFactory:
             from aws import AWSFactory
             factory = CloudFactory(AWSFactory)
         elif (cloudname == "Azure"):
-            from azure import AzureFactory
+            from az import AzureFactory
             factory = CloudFactory(AzureFactory)
         elif (cloudname == "GCP"):
             from gcp import GCPFactory

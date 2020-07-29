@@ -188,7 +188,8 @@ Following steps describe a way to set up and run scripts for Azure.
     ```
     az ad sp create-for-rbac --name KnoxSP --password knox-password > local-sp.json
     ```
-   Note: If you explicitly want to set permissions use the option ``--skip-assignment`` and assign Owner permissions at subscription level later.
+   NOTE: If you explicitly want to set permissions use the option ``--skip-assignment`` and assign Owner permissions at subscription level later.
+   NOTE: Service Principal should have Owner permissions at subscription level
 * Get subscription id
     ```
       az account show 

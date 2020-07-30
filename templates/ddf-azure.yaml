@@ -29,22 +29,22 @@ datalake_roles:
 storage:
     STORAGE_LOCATION_BASE:
             description: data directory
-            path: ${storage_account}@data
+            path: cdp-data
     DATALAKE_BUCKET:
             description: main data directory
-            path: /data
+            path: /cdp-data
     RANGER_AUDIT_LOCATION:
             description: ranger audit logs
-            path: ${storage_account}@ranger
+            path: cdp-ranger
     LOGS_LOCATION_BASE:
             description: logs for fluentd usecases
-            path: ${storage_account}@logs
+            path: cdp-logs
     LOGS_BUCKET:
             description: logs for fluentd usecases
-            path: ${storage_account}@logs
+            path: cdp-logs/fluentd
     ALL_LOCATIONS:
             description: wildcard resource locations
-            path: ${storage_account}@data
+            path: cdp-data
 permissions:
     storage:
         full-access:

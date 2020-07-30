@@ -3,15 +3,16 @@ import os
 import uuid
 
 from azure.common.credentials import ServicePrincipalCredentials
-from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.identity import ClientSecretCredential
 from azure.mgmt.msi import ManagedServiceIdentityClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.resource.policy import PolicyClient
 from azure.mgmt.authorization import AuthorizationManagementClient
-from azure.mgmt.authorization.models import (RoleAssignmentProperties, Permission, RoleDefinitionProperties)
+from azure.mgmt.authorization.models import (Permission, RoleDefinitionProperties)
+from azure.mgmt.storage import StorageManagementClient
+from azure.storage.filedatalake import DataLakeServiceClient
 
 # Variable name for template dir
-from azure.mgmt.resource.policy.models import PolicyDefinition
 from msrest.serialization import Model
 from msrestazure.azure_exceptions import CloudError
 
@@ -53,13 +54,16 @@ class AzureFactory:
     datalakename = None
     subscription_id = None
     resource_group = None
-    resource_group_object = None
+    storage_account_name = None
     credentials = None
+    client_secret_credential = None
 
     resource_client = None
     compute_client = None
     network_client = None
     authorization_client = None
+    storage_client = None
+    adls2_client = None
     msi_client = None
     policy_client = None
     role_definitions = None
@@ -79,6 +83,10 @@ class AzureFactory:
             raise ValueError('AZURE_CLIENT_SECRET environment variable missing')
         if os.environ.get('AZURE_TENANT_ID') is None:
             raise ValueError('AZURE_TENANT_ID environment variable missing')
+        if os.environ.get('STORAGE_ACCOUNT_NAME') is None:
+            raise ValueError('STORAGE_ACCOUNT_NAME environment variable missing')
+
+        self.storage_account_name = os.environ['STORAGE_ACCOUNT_NAME']
 
         self.credentials = ServicePrincipalCredentials(
             client_id=os.environ['AZURE_CLIENT_ID'],
@@ -86,13 +94,18 @@ class AzureFactory:
             tenant=os.environ['AZURE_TENANT_ID']
         )
 
+        #FIXME do we need two credentials?
+        self.client_secret_credential = ClientSecretCredential(os.environ['AZURE_TENANT_ID'], os.environ['AZURE_CLIENT_ID'], os.environ['AZURE_CLIENT_SECRET'])
+
         self.resource_client = ResourceManagementClient(self.credentials, self.subscription_id)
-        # self.compute_client = ComputeManagementClient(self.credentials, self.subscription_id)
-        # self.network_client = NetworkManagementClient(self.credentials, self.subscription_id)
         self.authorization_client = AuthorizationManagementClient(self.credentials, self.subscription_id)
         self.msi_client = ManagedServiceIdentityClient(self.credentials, self.subscription_id)
         self.policy_client = PolicyClient(self.credentials, self.subscription_id)
         self.authorization_client = AuthorizationManagementClient(self.credentials, self.subscription_id)
+        self.storage_client = StorageManagementClient(self.credentials, self.subscription_id)
+        # adls2 storage client
+        self.adls2_client = DataLakeServiceClient(account_url="{}://{}.dfs.core.windows.net".format(
+            "https", self.storage_account_name), credential=self.client_secret_credential)
 
     def vendor(self):
         return "Microsoft"
@@ -174,7 +187,76 @@ class AzureFactory:
                 i = i + 1
 
     def push(self, ddf):
-        self.create_identities_attach_policies(ddf)
+        # FIXME uncomment
+        # self.create_identities_attach_policies(ddf)
+        self.create_storage_attach_MSI(ddf)
+
+    def create_storage_attach_MSI(self, ddf):
+        self.create_storage_account_if_not_exist()
+        self.create_containers(ddf)
+
+    # Create containers
+    def create_containers(self, ddf):
+        for name, storage in ddf['storage'].items():
+            # Remove forward and trailing slashes
+            container_path = storage['path'].strip('/')
+            print(f"Container path is {container_path}")
+            # in case they provided us with containers and directories
+            paths = container_path.split('/')
+
+            try:
+                global file_system_client
+                file_system_client = self.adls2_client.create_file_system(file_system=paths[0])
+                print(f"Container {paths[0]} created under storage account {self.storage_account_name}")
+            except Exception as e:
+                if 'The specified container already exists' in str(e):
+                    print(f"Container {paths[0]} already exists under storage account {self.storage_account_name}")
+                else:
+                    raise ValueError(f"Error creating storage account {paths[0]}, reason {str(e)} ")
+            # create directories if required
+            if len(paths) > 1:
+                for p in paths[1:]:
+                    try:
+                        file_system_client.create_directory(p)
+                    except Exception as e:
+                        raise ValueError(f"Error creating directory {p} for account {paths[0]}, reason {str(e)} ")
+
+
+
+    ''' Do we need this? keeping it just in case
+    https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-storage?tabs=cmd#3-write-code-to-provision-storage-resources
+    '''
+    def create_storage_account_if_not_exist(self):
+        # Check if the account name is available. Storage account names must be unique across
+        # Azure because they're used in URLs.
+        availability_result = self.storage_client.storage_accounts.check_name_availability(self.storage_account_name)
+
+        if not availability_result.name_available:
+            print(f"Storage name {self.storage_account_name} exists.")
+            return
+        else:
+            # let's provision the account
+            poller = self.storage_client.storage_accounts.create(self.resource_group, self.storage_account_name,
+                                                                 {
+                                                                     "location": LOCATION,
+                                                                     "kind": "StorageV2",
+                                                                     "sku": {"name": "Standard_LRS"}
+                                                                 }
+                                                                 )
+
+        # Long-running operations return a poller object; calling poller.result()
+        # waits for completion.
+        account_result = poller.result()
+        print(f"Provisioned storage account {account_result.name}")
+
+        # Step 3: Retrieve the account's primary access key and generate a connection string.
+        keys = self.storage_client.storage_accounts.list_keys(self.resource_group, self.storage_account_name)
+
+        print(f"Primary key for storage account: {keys.keys[0].value}")
+
+        conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={self.storage_account_name};AccountKey={keys.keys[0].value}"
+
+        print(f"Connection string: {conn_string}")
 
     '''
     Function to create new MSIs if they do not already exist

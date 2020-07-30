@@ -187,12 +187,11 @@ class AzureFactory:
                 i = i + 1
 
     def push(self, ddf):
-        # FIXME uncomment
-        # self.create_identities_attach_policies(ddf)
+        self.create_identities_attach_policies(ddf)
         self.create_storage_attach_MSI(ddf)
 
     def create_storage_attach_MSI(self, ddf):
-        self.create_storage_account_if_not_exist()
+        #self.create_storage_account_if_not_exist()
         self.create_containers(ddf)
 
     # Create containers

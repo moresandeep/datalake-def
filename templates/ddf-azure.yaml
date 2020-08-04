@@ -25,7 +25,6 @@ datalake_roles:
             permissions:
                 - "storage:full-access:STORAGE_LOCATION_BASE"
                 - "storage:execute:ALL_LOCATIONS"
-                - "db:full-table-access:${datalake_name}-table"
 storage:
     STORAGE_LOCATION_BASE:
             description: data directory

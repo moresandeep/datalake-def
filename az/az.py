@@ -70,6 +70,9 @@ class AzureFactory:
     role_definitions = None
 
     resource_group_exists = False
+    # This is a list of resources that are not supported by this impl
+    # e.g. 'db'
+    exclude_resource_list = ["db"]
 
     def __init__(self):
         if os.environ.get('AZURE_SUBSCRIPTION_ID') is not None:
@@ -196,8 +199,12 @@ class AzureFactory:
             # in case they provided us with containers and directories
             paths = container_path.split('/')
 
+            # FIXME how to handle *? for now we just replace it with DL name
+            if '*' == paths[0]:
+                paths[0] = ddf['datalake']
+
+            global file_system_client
             try:
-                global file_system_client
                 file_system_client = self.adls2_client.create_file_system(file_system=paths[0])
                 print(f"Container {paths[0]} created under storage account {self.storage_account_name}")
             except Exception as e:
@@ -205,13 +212,14 @@ class AzureFactory:
                     print(f"Container {paths[0]} already exists under storage account {self.storage_account_name}")
                 else:
                     raise ValueError(f"Error creating storage account {paths[0]}, reason {str(e)} ")
-            # create directories if required
-            if len(paths) > 1:
-                for p in paths[1:]:
-                    try:
-                        file_system_client.create_directory(p)
-                    except Exception as e:
-                        raise ValueError(f"Error creating directory {p} for account {paths[0]}, reason {str(e)} ")
+            else:
+                # create directories if required
+                if len(paths) > 1:
+                    for p in paths[1:]:
+                        try:
+                            file_system_client.create_directory(p)
+                        except Exception as e:
+                            raise ValueError(f"Error creating directory {p} for account {paths[0]}, reason {str(e)} ")
 
 
 
@@ -265,12 +273,16 @@ class AzureFactory:
             permissions = role_permissions_map.get(role_name)
             # Create policies for all permissions
             for resource, perm, storage_path in permissions:
-                rules = self.get_rules_for_permission(ddf, perm)
-                self.create_policy_definition(rules['Name'], rules)
-                # For storage the policies are assigned at storage account/container level
-                # so we skip applying it here.
-                if resource != 'storage':
-                    self.assign_policy_to_msi(user_assigned_identity.principal_id, rules['Name'])
+                # Attach policies for only supported resources such as storage and sts
+                if resource not in self.exclude_resource_list:
+                    rules = self.get_rules_for_permission(ddf, perm)
+                    self.create_policy_definition(rules['Name'], rules)
+                    # For storage the policies are assigned at storage account/container level
+                    # so we skip applying it here.
+                    if resource != 'storage':
+                        self.assign_policy_to_msi(user_assigned_identity.principal_id, rules['Name'])
+                else:
+                    print(f"ERROR: Resource {resource} is currently not supported")
 
     # Function to get a list of all permissions defined in DDF
     # This function returns an unordered set of permission

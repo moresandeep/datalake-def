@@ -155,7 +155,7 @@ class App(cmd2.Cmd):
            # For Azure we have containers at storage account level
            if storage_account is not None:
                 d['storage_account'] = storage_account
-           with open('templates/ddf-azure.yaml', 'r') as reader:
+           with open('templates/ddf.yaml', 'r') as reader:
                ddf = Template(reader.read())
                ddf = ddf.safe_substitute(d)
         else:

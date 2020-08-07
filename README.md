@@ -210,5 +210,5 @@ For more information see [Azure Configure Authentication](https://docs.microsoft
 ## Examples
 * Create a default DDF 
     ```
-    "set debug true" "new_datalake -n srm -c Azure -s myStorageAccount" "build_datalake -c Azure" quit
+    ddt.py "set debug true" "new_datalake -n srm" "build_datalake -c Azure" "push_datalake -c Azure" quit
     ```
